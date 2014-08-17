@@ -1,20 +1,94 @@
 # Reproducible Research: Peer Assessment 1
-
+Submitted by Scott Garren
 
 ## Loading and preprocessing the data
 
-
+```{r}
+setwd("~/!RR/project 1/RepData_PeerAssessment1")  
+activity_data<-read.csv("activity.csv", colClasses=c("numeric", "Date", "character"))  
+  
+```  
 
 ## What is mean total number of steps taken per day?
-
-
-
+ 
+```{r}
+by_day<-split(activity_data, activity_data$date)
+day_mean<-NULL
+day_sum<-NULL
+for (day in by_day) {  
+  day_mean<-c(day_mean,mean(day$steps,na.rm=TRUE))  
+  day_sum<-c(day_sum,sum(day$steps,na.rm=TRUE)) 
+  }  
+cat(" The means and median are different after imputing the missing data. The mean and median are the same which is quite a coincidence. ")
+cat("mean of the daily steps=", mean(day_sum, na.rm=TRUE))  
+cat("median of the daily steps=", median(day_sum, na.rm=TRUE))  
+hist(day_sum, xlab="daily total steps", main="Histogram of daily step totals")  
+```
+  
 ## What is the average daily activity pattern?
+```{r}
+interval_ave<- function(act_data) {
+  by_interval<-split(act_data, act_data$interval)  
+  interval_mean<-NULL  
 
+  for (interval in by_interval) {  
+    interval_mean<-c(interval_mean,mean(interval$steps,na.rm=TRUE))  
+    }
+  return (interval_mean)
+  }
+int_ave<-interval_ave(activity_data)
+plot(int_ave, type="l",xlab="average steps", main="Average of steps by interval")  
 
+max_steps<-max(int_ave)
+max_int<-activity_data[match(max_steps,int_ave),3]
+cat("Maximum average steps was", max_steps, " in interval", max_int)
+
+```
 
 ## Imputing missing values
 
+I will replace all missing steps variables with the mean for that interval across the whole data set.
 
+```{r}
+for(i in 1:nrow(activity_data)) {  
+    if (is.na(activity_data$steps[i])) {   
+      activity_data$steps[i]<-interval_mean[(i-1)%%288+1]}   
+    }   
+    
+by_day<-split(activity_data, activity_data$date)   
+day_mean<-NULL   
+day_sum<-NULL   
+for (day in by_day) {  
+  day_mean<-c(day_mean,mean(day$steps,na.rm=TRUE))  
+  day_sum<-c(day_sum,sum(day$steps,na.rm=TRUE)) 
+  }  
+cat("mean of the daily steps=", mean(day_sum, na.rm=TRUE))  
+cat("median of the daily steps=", median(day_sum, na.rm=TRUE))  
+hist(day_sum, xlab="daily total steps", main="Histogram of daily imputed step totals")  
+```   
 
 ## Are there differences in activity patterns between weekdays and weekends?
+ Add a weekday factor field - TRUE>weekday, FALSE>weekend
+ 
+```{r}
+for(i in 1:nrow(activity_data)) {  
+    if (as.numeric(strftime(activity_data$date[i],format="%u"))>5) { activity_data$weekday[i] <- FALSE
+      } else activity_data$weekday[i] <- TRUE
+      }
+```
+
+calculate means for weekdays and weekends
+
+```{r}
+weekday_interval_average<-interval_ave(activity_data[activity_data$weekday,])
+weekend_interval_average<-interval_ave(activity_data[!activity_data$weekday,])
+```
+
+set up two row plot 
+
+```{r}
+par(mfcol=c(2,1))
+plot(weekend_interval_average, type="l",xlab="time interval",ylab="average steps", main="Weekend average of steps by interval") 
+plot(weekday_interval_average, type="l",xlab="time interval",ylab="average steps", main="Weekdays average of steps by interval")   
+
+```
